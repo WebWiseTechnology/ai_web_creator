@@ -1,21 +1,25 @@
 import './styles/colors.css';
 import './styles/App.css';
-import { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import { SlButton, SlDialog, SlInput } from "@shoelace-style/shoelace/dist/react";
 
 import {TabList, Tab} from './components/Tabs';
 import VirtualPage from './components/VirtualPage';
 import Editor from './components/Editor';
 import Chat from './components/Chat';
-
 import ChatMessage from './components/ChatMessage';
+import { getSavedStates, saveState, updateStateByName, updateStatesName, deleteState } from "./components/SavedStates";
+
 import AI from './model/AI';
 
 function App() {
+	const default_html_text = "<!-- HTML generated code will appear here --!> <h1>Preview for html, css, and javascript code</h1>";
+	const default_css_text = "/* Css styles will be applied from here */"
+	const default_js_text = "//Javascript code will appear here"
 
-	const [html, setHtml] = useState("<h1>Hello world!</h1>");
-	const [css, setCss] = useState("");
-	const [js, setJs] = useState("");
+	const [html, setHtml] = useState(default_html_text);
+	const [css, setCss] = useState(default_css_text);
+	const [js, setJs] = useState(default_js_text);
 	const [messages, setMessages] = useState([]);
 
 	const [loadingResponse, setLoadingResponse] = useState(false);
@@ -26,6 +30,40 @@ function App() {
 	// Show a Dialog if the API key is not set in the localStorage yet or if it is not valid
 	const [isCheckingAPIKey, setIsCheckingAPIKey] = useState(false);
 	const [showAPIKeyDialog, setShowAPIKeyDialog] = useState(!AI.isInitialized && !localStorage.getItem("api_key"));
+
+	const [savedStates, setSavedStates] = useState([]);
+	const [showSavedStates, setShowSavedStates] = useState(false);
+
+	const [selectedStateIndex, setSelectedStateIndex] = useState(null);
+
+	const [isEditingStateName, setIsEditingStateName] = useState(false);
+  	const [editedStateName, setEditedStateName] = useState("");
+
+	function handleReset() {
+		setHtml(default_html_text);
+		setCss(default_css_text);
+		setJs(default_js_text);
+		setSelectedStateIndex(null); // Deselect the currently selected state, if any
+	  }
+
+	// Function to handle selecting a state in the table
+	function handleSelectState(index) {
+		if(index !== selectedStateIndex){
+			if(selectedStateIndex !== null && selectedStateIndex >= 0){
+				handleSaveExistingState(selectedStateIndex);
+			}
+			setSelectedStateIndex(index);
+			setIsEditingStateName(false);
+			setEditedStateName("");
+			handleLoadState(index);
+		}
+	}
+
+	// Fetch saved states from localStorage on component mount
+	useEffect(() => {
+		const states = getSavedStates();
+		setSavedStates(states);
+	}, []);
 
 	if (localStorage.getItem("api_key") && !AI.isInitialized && !isCheckingAPIKey) {
 		checkAPIKeyValidity();
@@ -99,11 +137,185 @@ function App() {
 		document.body.removeChild(element);
 	}
 
+	// Function to handle saving the current state
+	function handleSaveState() {
+		// Show a dialog to get the state name from the user
+		const stateName = prompt("Enter a name for the saved state:");
+	
+		// Check if the user canceled or provided an empty name
+		if (stateName === null || stateName.trim() === "") {
+		alert("Please provide a valid name for the saved state.");
+		return;
+		}
+	
+		// Save the current state with the provided name
+		try {
+		saveState(stateName, html, css, js);
+		// alert(`State "${stateName}" saved successfully!`);
+		} catch (error) {
+		console.error("Error saving state:", error);
+		alert("An error occurred while saving the state. Please try again.");
+		}
+	
+		// Update the savedStates state to immediately display the new saved state
+		const updatedSavedStates = getSavedStates();
+		setSavedStates(updatedSavedStates);
+	}
+
+	function handleSaveExistingState() {
+		// Save the current state with the provided name
+		try {
+		const savedState = savedStates[selectedStateIndex];
+		updateStateByName(savedState.name, html, css, js);
+		// alert(`State "${stateName}" saved successfully!`);
+		} catch (error) {
+		console.error("Error saving state:", error);
+		alert("An error occurred while saving the state. Please try again.");
+		}
+	
+		// Update the savedStates state to immediately display the new saved state
+		const updatedSavedStates = getSavedStates();
+		setSavedStates(updatedSavedStates);
+	}
+  
+	// Function to handle loading a saved state
+	function handleLoadState(index) {
+		// Check if the specified index is valid
+		if (index < 0 || index >= savedStates.length) {
+		console.error("Invalid index for loading state.");
+		alert("Invalid index for loading state. Please try again.");
+		return;
+		}
+	
+		// Load the saved state at the specified index and update the html, css, and js states accordingly
+		const stateToLoad = savedStates[index];
+		setHtml(stateToLoad.html);
+		setCss(stateToLoad.css);
+		setJs(stateToLoad.js);
+	}
+  
+	// Function to handle deleting a saved state
+	function handleDeleteState() {
+		// Check if the specified index is valid
+		if (selectedStateIndex >= savedStates.length) {
+		console.error("Invalid index for deleting state.");
+		alert("Invalid index for deleting state. Please try again.");
+		return;
+		}
+	
+		// Confirm the deletion with the user
+		const stateToDelete = savedStates[selectedStateIndex];
+		const confirmDelete = window.confirm(`Are you sure you want to delete the state "${stateToDelete.name}"?`);
+		if (!confirmDelete) {
+		return;
+		}
+	
+		// Delete the saved state at the specified index
+		try {
+		deleteState(selectedStateIndex);
+		alert(`State "${stateToDelete.name}" deleted successfully!`);
+		} catch (error) {
+		console.error("Error deleting state:", error);
+		alert("An error occurred while deleting the state. Please try again.");
+		}
+	
+		// Update the savedStates state to immediately remove the deleted state from the UI
+		const updatedSavedStates = getSavedStates();
+		setSavedStates(updatedSavedStates);
+	}
+
+	// Function to handle editing the state name
+	function handleEditStateName(event) {
+		event.stopPropagation(); // Prevent the event from propagating to the tab click handler
+		const stateToEdit = savedStates[selectedStateIndex];
+		if (stateToEdit && editedStateName.trim() !== "") {
+		  const isNameAlreadyTaken =
+			savedStates.findIndex((state, index) => index !== selectedStateIndex && state.name === editedStateName) !== -1;
+		  if (isNameAlreadyTaken) {
+			alert("The name is already taken. Please choose a different name.");
+			return;
+		  }
+	
+		  // Update the saved state in local storage
+		  updateStatesName(stateToEdit.name, editedStateName);
+		  stateToEdit.name = editedStateName;
+		  setEditedStateName("");
+		  setIsEditingStateName(false);
+		}
+	  }
+
+  
 	return (
 		<div className="App">
 			
 			<APIKeyDialog show={showAPIKeyDialog} loading={isCheckingAPIKey} checkAPIKeyValidity={checkAPIKeyValidity} />
 			<div className="container">
+				{/* Closable Column with Tabs */}
+				<div className={`saved-states-panel ${showSavedStates ? "show" : ""}`}>
+					<div className="tab-buttons">
+						<button
+						type="button"
+						className="sidebar-button"
+						onClick={handleSaveState}
+						>
+						<ion-icon name="save-outline"></ion-icon>
+						</button>
+						<button
+						type="button"
+						className="sidebar-button"
+						onClick={handleDeleteState}
+						disabled={selectedStateIndex === null}
+						>
+						<ion-icon name="trash-outline"></ion-icon>
+						</button>
+					</div>
+					{/* Show the list of saved states in tabs */}
+					<div className="tabs">
+					{savedStates.map((state, index) => (
+						<div
+						key={index}
+						className={`tab ${index === selectedStateIndex ? "selected" : ""}`}
+						onClick={() => handleSelectState(index)}
+						>
+						{isEditingStateName && index === selectedStateIndex ? (
+							<input
+							type="text"
+							value={editedStateName}
+							onChange={(e) => setEditedStateName(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									handleEditStateName(e);
+									setIsEditingStateName(false)
+								}
+							}}
+							onClick={(e) => e.stopPropagation()}
+							autoFocus
+							/>
+						) : (
+							<div className="tab-label">{state.name}</div>
+						)}
+						{/* Show the edit icon when the state is selected */}
+						{index === selectedStateIndex && (
+							<div className="edit-icon" onClick={() => isEditingStateName ? setIsEditingStateName(false) : setIsEditingStateName(true)}>
+							<ion-icon name="create-outline"></ion-icon>
+							</div>
+						)}
+						</div>
+					))}
+					</div>
+					</div>
+				<div className="sidebar">
+				<button type="button" className="toggle-button" onClick={() => setShowSavedStates(!showSavedStates)}>
+          			{showSavedStates ? <ion-icon size="large" name="chevron-back-circle-outline"/>: <ion-icon size="large" name="chevron-forward-circle-outline"/> }
+        		</button>
+				<button
+						type="button"
+						className="toggle-button"
+						onClick={handleReset}
+						>
+						<ion-icon size="large" name="refresh-outline"></ion-icon>
+						</button>
+				</div>
 				<div>
 					<TabList html={html} css={css} js={js} loadingResponse={loadingResponse} downloadFunction={ downloadHtmlFile }>
 						<Tab key="page" label="Preview" icon="card-image" >
