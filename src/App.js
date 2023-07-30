@@ -114,29 +114,6 @@ function App() {
 		});
 	}
 
-	function downloadHtmlFile() {
-
-		const html_file = `
-			<html>
-				<head>
-					<style>${css}</style>
-				</head>
-				<body>
-					${html}
-					<script>${js}</script>
-				</body>
-			</html>
-		`;
-
-		const element = document.createElement("a");
-		const file = new Blob([html_file], { type: 'text/html' });
-		element.href = URL.createObjectURL(file);
-		element.download = "index.html";
-		document.body.appendChild(element); // Required for this to work in FireFox
-		element.click();
-		document.body.removeChild(element);
-	}
-
 	// Function to handle saving the current state
 	function handleSaveState() {
 		// Show a dialog to get the state name from the user
@@ -317,7 +294,7 @@ function App() {
 						</button>
 				</div>
 				<div>
-					<TabList html={html} css={css} js={js} loadingResponse={loadingResponse} downloadFunction={ downloadHtmlFile }>
+					<TabList html={html} css={css} js={js} loadingResponse={loadingResponse} >
 						<Tab key="page" label="Preview" icon="card-image" >
 							<VirtualPage html={html} css={css} js={js} />
 						</Tab>

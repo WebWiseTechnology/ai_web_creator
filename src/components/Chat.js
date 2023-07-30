@@ -44,6 +44,7 @@ export default function Chat({ messages, addMessage, loadingResponse, usedTokens
 					<TextareaAutosize
 						onKeyPress={onClick}
 						disabled={loadingResponse}
+						placeholder="Enter description to prompt html, css, and javascript code generation"
 					/>
 					<SlTooltip content="Send">
 						<SlButton

@@ -1,0 +1,53 @@
+/* CSS for Dropdown */
+  .dropdown-container {
+    position: relative;
+    float: right;
+    margin-left: auto;
+    width: 200px;
+  }
+  
+  .dropdown-toggle {
+    background-color: var(--color-tab-active);
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width:100%;
+  }
+  
+  .dropdown-toggle ion-icon {
+    margin-left: 8px;
+
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--color-background-secondary);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 2;
+  }
+  
+  .dropdown-menu button {
+    background-color: var(--color-tab);
+    color: var(--color-text);
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .dropdown-menu button:hover {
+    background-color: var(--color-tab-hover);
+  }
