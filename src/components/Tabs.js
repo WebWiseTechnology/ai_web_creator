@@ -1,12 +1,34 @@
 import '../styles/Tabs.css';
-import React, { useState } from 'react';
+import React, {useEffect, useContext} from 'react';
 import Dropdown from "./DownloadDropdown";
 import JSZip from "jszip";
 
 import { SlIcon, SlSpinner } from "@shoelace-style/shoelace/dist/react";
 
-export function TabList ({ children, html, css, js, loadingResponse }) {
-	const [activeTab, setActiveTab] = useState(children[0].key);
+import { Filecontext } from './FileContext';
+
+export function buildHTMLfile(html, css, js){
+	const html_file = `
+		<html>
+			<head>
+				<style>${css}</style>
+			</head>
+			<body>
+				${html}
+				<script>${js}</script>
+			</body>
+		</html>
+	`;
+	return html_file;
+}
+
+export function TabList ({ children, loadingResponse }) {
+	const { html, css, js, activeTab, setActiveTab } = useContext(Filecontext)
+	  
+	useEffect(() => {
+		setActiveTab(children[0].key);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleChangeTab = (key) => {
 		setActiveTab(key);
@@ -63,21 +85,8 @@ export function TabList ({ children, html, css, js, loadingResponse }) {
 	}
 
 	function downloadFullHtmlFile() {
-
-		const html_file = `
-			<html>
-				<head>
-					<style>${css}</style>
-				</head>
-				<body>
-					${html}
-					<script>${js}</script>
-				</body>
-			</html>
-		`;
-
 		const element = document.createElement("a");
-		const file = new Blob([html_file], { type: 'text/html' });
+		const file = new Blob([buildHTMLfile(html,css,js)], { type: 'text/html' });
 		element.href = URL.createObjectURL(file);
 		element.download = "index.html";
 		document.body.appendChild(element); // Required for this to work in FireFox
@@ -95,8 +104,8 @@ export function TabList ({ children, html, css, js, loadingResponse }) {
 						className={`tablist-tab ${activeTab === key ? "active" : ""}`}
 						onClick={() => handleChangeTab(key)}
 					>
-						<SlIcon name={props.icon} label={props.label} />
-						<span>{props.label}</span>
+					<SlIcon name={props.icon} label={props.label} />
+					<span>{props.label}</span>
 					</div>
 				))}
 

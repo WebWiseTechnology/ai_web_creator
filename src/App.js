@@ -3,20 +3,22 @@ import './styles/App.css';
 import React, { useState, useEffect} from 'react';
 import { SlButton, SlDialog, SlInput } from "@shoelace-style/shoelace/dist/react";
 
-import {TabList, Tab} from './components/Tabs';
+import {TabList, Tab, buildHTMLfile} from './components/Tabs';
 import VirtualPage from './components/VirtualPage';
 import Editor from './components/Editor';
 import Chat from './components/Chat';
 import ChatMessage from './components/ChatMessage';
 import { getSavedStates, saveState, updateStateByName, updateStatesName, deleteState } from "./components/SavedStates";
+import { Filecontext } from './components/FileContext';
 
 import AI from './model/AI';
 
 function App() {
-	const default_html_text = "<!-- HTML generated code will appear here --!> <h1>Preview for html, css, and javascript code</h1>";
+	const default_html_text = "<!-- HTML generated code will appear here --> <h1>Preview for html, css, and javascript code</h1>";
 	const default_css_text = "/* Css styles will be applied from here */"
 	const default_js_text = "//Javascript code will appear here"
 
+	const [activeTab, setActiveTab] = useState(0);
 	const [html, setHtml] = useState(default_html_text);
 	const [css, setCss] = useState(default_css_text);
 	const [js, setJs] = useState(default_js_text);
@@ -44,7 +46,38 @@ function App() {
 		setCss(default_css_text);
 		setJs(default_js_text);
 		setSelectedStateIndex(null); // Deselect the currently selected state, if any
+	}
+
+	function handleCopy() {
+		switch (activeTab) {
+		  case "page":
+			const full_html = buildHTMLfile(html, css, js);
+			copyToClipboard(full_html);
+			break;
+		  case "html":
+			copyToClipboard(html);
+			break;
+		  case "css":
+			copyToClipboard(css);
+			break;
+		  case "js":
+			copyToClipboard(js);
+			break;
+		  default:
+			break;
+		}
 	  }
+	  
+	  // Helper function to copy the provided content to the clipboard
+	  function copyToClipboard(content) {
+		const textarea = document.createElement("textarea");
+		textarea.value = content;
+		document.body.appendChild(textarea);
+		textarea.select();
+		document.execCommand("copy");
+		document.body.removeChild(textarea);
+	  }
+	  
 
 	// Function to handle selecting a state in the table
 	function handleSelectState(index) {
@@ -291,9 +324,17 @@ function App() {
 						onClick={handleReset}
 						>
 						<ion-icon size="large" name="refresh-outline"></ion-icon>
-						</button>
+				</button>
+				<button
+						type="button"
+						className="toggle-button"
+						onClick={handleCopy}
+						>
+						<ion-icon size="large" name="copy-outline"></ion-icon>
+				</button>
 				</div>
 				<div>
+					<Filecontext.Provider value={{ html, css, js, activeTab, setActiveTab}}>
 					<TabList html={html} css={css} js={js} loadingResponse={loadingResponse} >
 						<Tab key="page" label="Preview" icon="card-image" >
 							<VirtualPage html={html} css={css} js={js} />
@@ -308,6 +349,7 @@ function App() {
 							<Editor language="javascript" displayName="JS" value={js} onChange={setJs} />
 						</Tab>
 					</TabList>
+					</Filecontext.Provider>
 				</div>
 				<div style={{width: "600px"}}>
 					<Chat messages={messages} addMessage={addMessage} loadingResponse={loadingResponse} usedTokens={usedTokens} moneySpent={moneySpent} />
