@@ -1,7 +1,7 @@
 # AI Web Designer
 AI Web Designer is a web building tool powered by OpenAI's GPT API. It allows you to create and design static web pages with ease. The tool is programmed using ReactJS and is designed to help individuals and teams build web pages faster.
 
-You can now try it live at https://csansoon.github.io/ai-web-designer/!
+This project is branched off of https://github.com/csansoon/ai-web-designer and expanded to have serveral saved states rather than a single instance.
 
 ## Features
 - Real-time preview of HTML, CSS, and JS code
